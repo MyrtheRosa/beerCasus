@@ -52,5 +52,4 @@ $result = $conn->query("SELECT * FROM bier ORDER BY likes DESC, naam ASC");
         </table>
     </div>
 </body>
-
 </html>
