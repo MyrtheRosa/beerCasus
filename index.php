@@ -19,6 +19,18 @@ $most_liked = $conn->query("SELECT * FROM bier ORDER BY likes DESC LIMIT 3");
 </head>
 
 <body>
+    <div class="cards">
+        <?php while ($row = $most_liked->fetch_assoc()): ?>
+            <div class="card-1">
+                <h3>
+                    <?php echo 'Name: ' . $row["naam"] ?>
+                    </br>
+                    <?php echo 'Likes: ' . $row["likes"] ?>
+                </h3>
+            </div>
+        <?php endwhile; ?>
+    </div>
+
     <div class="container">
         <table>
             <thead>
@@ -53,5 +65,4 @@ $most_liked = $conn->query("SELECT * FROM bier ORDER BY likes DESC LIMIT 3");
         </table>
     </div>
 </body>
-
 </html>
