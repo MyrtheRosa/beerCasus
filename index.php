@@ -4,8 +4,9 @@ include 'connect.php';
 // Perform query
 $result = $conn->query("SELECT * FROM bier ORDER BY likes DESC, naam ASC");
 
-
+$most_liked = $conn->query("SELECT * FROM bier ORDER BY likes DESC LIMIT 3");
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
