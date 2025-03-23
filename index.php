@@ -1,46 +1,53 @@
 <?php
-if (!isset($_COOKIE['user_id'])) {
-    $cookie_id = bin2hex(random_bytes(16)); 
-    setcookie('user_id', $cookie_id, time() + (86400 * 30), "/"); 
-} else {
-    $cookie_id = $_COOKIE['user_id'];
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
 }
-?>
 
-
-
-<?php
 include 'connect.php';
 
-// Perform query
-$result = $conn->query("SELECT * FROM bier ORDER BY likes DESC, naam ASC");
+$user_id = $_SESSION['user_id'];
 
-$most_liked = $conn->query("SELECT * FROM bier ORDER BY likes DESC LIMIT 3");
+// Haal bieren en persoonlijke ratings op
+$query = "
+    SELECT b.*, r.rating 
+    FROM bier b
+    LEFT JOIN ratings r ON b.id = r.bier_id AND r.user_id = ?
+    ORDER BY b.naam ASC";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bier Casus</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script>
+        function rateBeer(bier_id, rating) {
+            fetch('rate.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'bier_id=' + bier_id + '&rating=' + rating
+            }).then(() => {
+                location.reload(); // Herlaad pagina om de rating te updaten
+            });
+        }
+    </script>
 </head>
-
 <body>
-    <div class="cards">
-        <?php while ($row = $most_liked->fetch_assoc()): ?>
-            <div class="card-1">
-                <h3>
-                    <?php echo 'Name: ' . $row["naam"] ?>
-                    </br>
-                    <?php echo 'Likes: ' . $row["likes"] ?>
-                </h3>
-            </div>
-        <?php endwhile; ?>
-    </div>
+    <<div class="logout-container">
+    <form action="logout.php" method="POST">
+        <button type="submit" class="logout-btn">Uitloggen</button>
+    </form>
+</div>
+
 
     <div class="container">
         <table>
@@ -48,32 +55,28 @@ $most_liked = $conn->query("SELECT * FROM bier ORDER BY likes DESC LIMIT 3");
                 <tr>
                     <th>Naam</th>
                     <th>Brouwer</th>
-                    <th>Likes</th>
-                    <th>Like/Dislike</th>
+                    <th>Jouw Rating</th>
                 </tr>
             </thead>
             <tbody>
                 <?php while ($row = $result->fetch_assoc()): ?>
-                    <tr class="tr-body">
-                        <td><?php echo $row["naam"] ?></td>
-                        <td><?php echo $row["brouwer"] ?></td>
-                        <td><?php echo $row["likes"] ?></td>
-                        <?php
-                        echo "<td>
-                            <form method='POST' action='likes.php'>                            
-                                <input type='hidden' name='bier_id' value='" . $row['id'] . "'>
-                                <button type='submit' class='like-btn' name='action' value='like'>
-                                <i class='fa-solid fa-thumbs-up'></i>
-                                </button>
-                                <button type='submit' class='dislike-btn' name='action' value='dislike'>
-                                    <i class='fa-solid fa-thumbs-down'></i>
-                                </button>
-                            </form>
-                          </td>"; ?>
+                    <tr>
+                        <td><?php echo $row["naam"]; ?></td>
+                        <td><?php echo $row["brouwer"]; ?></td>
+                        <td>
+                            <?php 
+                            $user_rating = $row['rating'] ?? 0;
+                            for ($i = 1; $i <= 5; $i++): 
+                            ?>
+                                <i class="fa-star fa-solid <?php echo ($i <= $user_rating) ? 'active' : ''; ?>"
+                                   onclick="rateBeer(<?php echo $row['id']; ?>, <?php echo $i; ?>)"></i>
+                            <?php endfor; ?>
+                        </td>
                     </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
     </div>
+
 </body>
 </html>
