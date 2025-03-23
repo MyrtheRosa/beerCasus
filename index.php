@@ -1,4 +1,15 @@
 <?php
+if (!isset($_COOKIE['user_id'])) {
+    $cookie_id = bin2hex(random_bytes(16)); 
+    setcookie('user_id', $cookie_id, time() + (86400 * 30), "/"); 
+} else {
+    $cookie_id = $_COOKIE['user_id'];
+}
+?>
+
+
+
+<?php
 include 'connect.php';
 
 // Perform query
